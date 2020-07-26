@@ -61,6 +61,10 @@
      <Compile Include="Assets\Scripts\Packet.cs" />
      <Compile Include="Assets\Scripts\ThreadManager.cs" />
      <Compile Include="Assets\Scripts\ClientSend.cs" />
+     <Compile Include="Assets\Scripts\GameManager.cs" />
+     <Compile Include="Assets\Scripts\PlayerManager.cs" />
+     <Compile Include="Assets\Scripts\CameraController.cs" />
+     <Compile Include="Assets\Scripts\PlayerController.cs" />
  <Reference Include="Unity.Timeline.Editor">
  <HintPath>D:/Projetos/Unity Networking/GameClient/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
  </Reference>
