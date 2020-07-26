@@ -1,13 +1,20 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class ClientSend : MonoBehaviour
 {
-   private static void SendTCPData(Packet _packet)
+    private static void SendTCPData(Packet _packet)
     {
         _packet.WriteLength();
         Client.instance.tcp.SendData(_packet);
+    }
+
+    private static void SendUDPData(Packet _packet)
+    {
+        _packet.WriteLength();
+        Client.instance.udp.SendData(_packet);
     }
 
     #region
@@ -22,5 +29,14 @@ public class ClientSend : MonoBehaviour
         }
     }
 
+    public static void UDPTestReceived()
+    {
+        using (Packet _packet = new Packet((int)ClientPackets.udpTestReceived))
+        {
+            _packet.Write("Received a UDP packet");
+
+            SendUDPData(_packet);
+        }
+    }
     #endregion
 }
