@@ -7,7 +7,6 @@ using System;
 
 public class Client : MonoBehaviour
 {
-
     public static Client instance;
     public static int dataBufferSize = 4096;
 
@@ -17,6 +16,7 @@ public class Client : MonoBehaviour
     public TCP tcp;
     public UDP udp;
 
+    private bool isConnected = false;
     private delegate void PacketHandler(Packet _packet);
     private static Dictionary<int, PacketHandler> packetHandlers;
 
@@ -28,7 +28,7 @@ public class Client : MonoBehaviour
         }
         else if (instance != this)
         {
-            Debug.Log("Instance already exists, destroying object");
+            Debug.Log("Instance already exists, destroying object!");
             Destroy(this);
         }
     }
@@ -39,9 +39,16 @@ public class Client : MonoBehaviour
         udp = new UDP();
     }
 
+    private void OnApplicationQuit()
+    {
+        Disconnect();
+    }
+
     public void ConnectToServer()
     {
         InitializeClientData();
+
+        isConnected = true;
         tcp.Connect();
     }
 
@@ -81,6 +88,21 @@ public class Client : MonoBehaviour
             stream.BeginRead(receiveBuffer, 0, dataBufferSize, ReceiveCallback, null);
         }
 
+        public void SendData(Packet _packet)
+        {
+            try
+            {
+                if (socket != null)
+                {
+                    stream.BeginWrite(_packet.ToArray(), 0, _packet.Length(), null, null);
+                }
+            }
+            catch (Exception _ex)
+            {
+                Debug.Log($"Error sending data to server via TCP: {_ex}");
+            }
+        }
+
         private void ReceiveCallback(IAsyncResult _result)
         {
             try
@@ -88,7 +110,7 @@ public class Client : MonoBehaviour
                 int _byteLength = stream.EndRead(_result);
                 if (_byteLength <= 0)
                 {
-                    // TODO: disconnect
+                    instance.Disconnect();
                     return;
                 }
 
@@ -98,10 +120,9 @@ public class Client : MonoBehaviour
                 receivedData.Reset(HandleData(_data));
                 stream.BeginRead(receiveBuffer, 0, dataBufferSize, ReceiveCallback, null);
             }
-            catch (Exception _ex)
+            catch
             {
-                Console.WriteLine($"Error receiving TCP data: {_ex}");
-                // TODO: disconnect
+                Disconnect();
             }
         }
 
@@ -133,7 +154,6 @@ public class Client : MonoBehaviour
                 });
 
                 _packetLength = 0;
-
                 if (receivedData.UnreadLength() >= 4)
                 {
                     _packetLength = receivedData.ReadInt();
@@ -152,18 +172,14 @@ public class Client : MonoBehaviour
             return false;
         }
 
-        public void SendData(Packet _packet)
+        private void Disconnect()
         {
-            try
-            {
-                if (socket != null)
-                {
-                    stream.BeginWrite(_packet.ToArray(), 0, _packet.Length(), null, null);
-                }
-            } catch (Exception _ex)
-            {
-                Debug.Log($"Error sending data to server: {_ex}");
-            }
+            instance.Disconnect();
+
+            stream = null;
+            receivedData = null;
+            receiveBuffer = null;
+            socket = null;
         }
     }
 
@@ -215,21 +231,21 @@ public class Client : MonoBehaviour
 
                 if (_data.Length < 4)
                 {
-                    //TODO disconnect
+                    instance.Disconnect();
                     return;
                 }
 
                 HandleData(_data);
-            } 
+            }
             catch
             {
-                // TODO disconnect
+                Disconnect();
             }
         }
 
         private void HandleData(byte[] _data)
         {
-            using(Packet _packet = new Packet(_data))
+            using (Packet _packet = new Packet(_data))
             {
                 int _packetLength = _packet.ReadInt();
                 _data = _packet.ReadBytes(_packetLength);
@@ -244,18 +260,37 @@ public class Client : MonoBehaviour
                 }
             });
         }
+
+        private void Disconnect()
+        {
+            instance.Disconnect();
+
+            endPoint = null;
+            socket = null;
+        }
     }
 
     private void InitializeClientData()
     {
         packetHandlers = new Dictionary<int, PacketHandler>()
         {
-             { (int) ServerPackets.welcome, ClientHandle.Welcome },
-             { (int) ServerPackets.spawnPlayer, ClientHandle.SpawnPlayer },
-             { (int) ServerPackets.playerPosition, ClientHandle.PlayerPosition },
-             { (int) ServerPackets.playerRotation, ClientHandle.PlayerRotation },
+            { (int)ServerPackets.welcome, ClientHandle.Welcome },
+            { (int)ServerPackets.spawnPlayer, ClientHandle.SpawnPlayer },
+            { (int)ServerPackets.playerPosition, ClientHandle.PlayerPosition },
+            { (int)ServerPackets.playerRotation, ClientHandle.PlayerRotation },
         };
+        Debug.Log("Initialized packets.");
+    }
 
-        Debug.Log("Client packets Initialized");
+    private void Disconnect()
+    {
+        if (isConnected)
+        {
+            isConnected = false;
+            tcp.socket.Close();
+            udp.socket.Close();
+
+            Debug.Log("Disconnected from server.");
+        }
     }
 }
