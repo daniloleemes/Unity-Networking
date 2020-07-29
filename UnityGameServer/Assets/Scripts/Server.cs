@@ -34,6 +34,12 @@ public class Server
         Debug.Log($"Server started on {Port}");
     }
 
+    internal static void Stop()
+    {
+        tcpListener.Stop();
+        udpListener.Close();
+    }
+
     private static void UDPReceiveCallback(IAsyncResult _result)
     {
         try
