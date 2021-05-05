@@ -21,10 +21,13 @@ public class Client
         udp = new UDP(id);
     }
 
-    public void SendIntoGame(string _playerName)
+    public void SendIntoGame(string _playerName, RoomManager room)
     {
-        player = NetworkManager.instance.InstantiatePlayer();
-        player.Initialize(id, _playerName);
+        var nextSpawn = room.GetNextSpawn();
+        if (nextSpawn == null) return;
+        player = NetworkManager.instance.InstantiatePlayer((Vector3)nextSpawn);
+        player.Initialize(id, _playerName, room);
+        room.AddPlayer(player);
 
         foreach (Client _client in Server.clients.Values)
         {

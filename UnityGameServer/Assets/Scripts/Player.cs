@@ -17,6 +17,8 @@ public class Player : MonoBehaviour
     private bool[] inputs;
     private float yVelocity = 0;
 
+    private RoomManager currentRoom;
+
     private void Start()
     {
         gravity *= Time.fixedDeltaTime * Time.fixedDeltaTime;
@@ -24,13 +26,17 @@ public class Player : MonoBehaviour
         jumpSpeed *= Time.fixedDeltaTime;
     }
 
-    public void Initialize(int _id, string _username)
+    public void Initialize(int _id, string _username, RoomManager room)
     {
         id = _id;
         username = _username;
         health = maxHealth;
 
         inputs = new bool[5];
+
+        // TODO remove room from here
+        gameObject.transform.parent = room.transform;
+        currentRoom = room;
     }
 
     public void FixedUpdate()
